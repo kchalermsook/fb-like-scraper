@@ -17,6 +17,9 @@ var utils = require('utils');
 var casper = require('casper').create({
     // verbose: true,
     // logLevel: 'debug',
+    viewportSize : {
+        width: 1600, height: 900
+    },
     pageSettings: {
         loadImages: false, //The script is much faster when this field is set to false
         loadPlugins: false,
@@ -31,7 +34,7 @@ casper.then(function() {
     phantom.cookies = JSON.parse(data);
 });
 
-casper.thenOpen("https://www.facebook.com/browse/?type=page_fans&page_id=760197027443228", function() {
+casper.thenOpen("https://www.facebook.com/search/536678779695541/likers", function() {
     console.log("Facebook website opened");
 });
 
@@ -40,23 +43,22 @@ casper.then(function() {
     this.wait(3000); //Wait a bit so page loads (there are a lot of ajax calls and that is why we are waiting 6 seconds)
     this.capture('AfterLogin.png');
 });
-
+casper.then(function() {
+    this.scrollToBottom();
+    this.wait(3000); //Wait a bit so page loads (there are a lot of ajax calls and that is why we are waiting 6 seconds)
+    this.capture('AfterLogin2.png');
+});
 
 casper.then(function() {
-    console.log("getAllElementsWithAttribute1");
-    docs = this.getElementsInfo('a[data-gt]:not([data-gt=""])');
+    docs = this.getElementsInfo('._gll a');
     var all = [];
     for (var i = 0; i < docs.length; i++) {
-        attr = JSON.parse(docs[i].attributes["data-gt"]);
+        name = docs[i].text;
         href = docs[i].attributes.href;
-        if (attr.engagement) {
-            // console.log(docs[i].attributes["data-gt"]);
-            all.push({
-                userId: attr.engagement.eng_tid,
-                href: href,
-                name: docs[i].text
-            });
-        }
+        all.push({
+            href: href,
+            name: name
+        });
     }
     utils.dump(all);
 });
