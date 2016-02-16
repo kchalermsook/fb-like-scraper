@@ -33,7 +33,7 @@ casper.start();
 casper.then(function() {
     phantom.cookies = JSON.parse(data);
 });
-
+// https://www.facebook.com/search/30/20/users-age-2/616836771737354/likers/intersect     // People who like Yamaha Tricity Thailand and are older than 20 and younger than 30
 casper.thenOpen("https://www.facebook.com/search/536678779695541/likers", function() {
     console.log("Facebook website opened");
 });
