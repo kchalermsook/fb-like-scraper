@@ -2,12 +2,14 @@ var cookieFilename = "cookie";
 var fs = require('fs');
 var utils = require('utils');
 var moment = require('moment');
+var USER_JSON_FILENAME = "user_json.txt";
 
 var topics;
 var currentTopic;
+var currentUser;
 var openFriendPage = function(userId) {
     casper.thenOpen("https://www.facebook.com/search/" + userId + "/friends", function() {
-        console.log("Friend Page opened");
+        console.log("Friend Page opened " + "https://www.facebook.com/search/" + userId + "/friends");
     });
 };
 var openAboutPage = function(userId) {
@@ -73,18 +75,28 @@ var getDataFriendID = function() {
                 });
             }
         }
-        console.log(all.length);
-        utils.dump(all);
-        console.log(all.length);
+        // utils.dump(all);
+        var friendText = all.map(function(elem) {
+            return elem.userId;
+        }).join("|");
+        currentUser.friendIds = friendText;
     });
 };
 
 var getDataBirthdate = function() {
     console.log("getDataBirthDate");
     casper.then(function() {
-        docs = this.getElementsInfo('span._c24._50f3 div:nth-child(2)');
-        birthdate = docs[0].text;
-        console.log("birthdate " + birthdate);
+        if (this.exists('span._c24._50f3 div:nth-child(2)')) {
+            console.log("exist getDataBirthDate");
+            docs = this.getElementsInfo('span._c24._50f3 div:nth-child(2)');
+            birthdate = docs[0].text;
+            currentUser.birthdate = birthdate;
+        } else {
+            console.log("not exist getDataBirthDate");
+            currentUser.birthdate = "";
+        }
+
+
 
 
     });
@@ -92,14 +104,21 @@ var getDataBirthdate = function() {
 var getDataArea = function() {
     console.log("getDataArea");
     casper.then(function() {
-        docs = this.getElementsInfo('._6a._5u5j._6b');
-        // utils.dump(docs);
-        for (var i = 0; i < docs.length; i++) {
-            if (docs[i].text.indexOf("Lives in") >= 0) {
-                area = docs[i].text;
-                console.log("area " + area);
+        currentUser.area = "";
+        if (this.exists('._6a._5u5j._6b')) {
+            docs = this.getElementsInfo('._6a._5u5j._6b');
+            // utils.dump(docs);
+            for (var i = 0; i < docs.length; i++) {
+                if (docs[i].text.indexOf("Lives in") >= 0) {
+                    area = docs[i].text;
+                    console.log("area " + area);
+                    currentUser.area = area;
+                }
             }
+        } else {
+            
         }
+
 
     });
 };
@@ -189,6 +208,43 @@ casper.start();
 casper.then(function() {
     phantom.cookies = JSON.parse(data);
 });
+
+var dataJsonUser = fs.read(USER_JSON_FILENAME);
+var users = JSON.parse(dataJsonUser);
+// utils.dump(users);
+users.forEach(function(user) {
+    console.log("raw data");
+    utils.dump(user);
+    currentUser = user;
+    //// 0. resolve id 
+    casper.thenOpen("https://www.facebook.com/" + user.id, function() {
+        newId = this.getCurrentUrl().split("=")[1];
+        user.id = newId;
+        ///////////1. Get Friend IDS 
+        // openFriendPage(user.id);
+        // scrollBottom(1);
+        // capture("friend.png");
+        // getDataFriendID();
+        ////////// 2. Get Birthdate 
+        openAboutPage(user.id);
+        scrollBottom(1);
+        // capture("birthday.png");
+        getDataBirthdate();
+        //////////// 3. Get Area 
+        capture("area.png");
+        getDataArea();
+    });
+
+});
+
+///// Last Step. Log the result 
+casper.then(function() {
+    console.log("log before end ");
+    utils.dump(users);
+});
+casper.run();
+
+
 // https://www.facebook.com/search/30/20/users-age-2/616836771737354/likers/intersect     // People who like Yamaha Tricity Thailand and are older than 20 and younger than 30
 
 ///////// 1. Get Friend IDS 
@@ -280,5 +336,3 @@ casper.then(function() {
 // casper.then(function() {
 //     utils.dump(topics);
 // });
-
-// casper.run();

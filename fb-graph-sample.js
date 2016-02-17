@@ -22,5 +22,5 @@ var getCommentsOfPost = function(postId){
     });
 };
 
-getWhoLikePost("1229825353714210", 1000);
+getWhoLikePost("1229825353714210", 1);
 // getCommentsOfPost("1229825353714210");
