@@ -14,7 +14,7 @@ var openFriendPage = function(userId) {
 };
 var openAboutPage = function(userId) {
     casper.thenOpen("https://www.facebook.com/profile.php?id=" + userId + "&sk=about", function() {
-        console.log("About Page opened");
+        console.log("About Page opened" + "https://www.facebook.com/profile.php?id=" + userId + "&sk=about");
     });
 };
 var openWorkPage = function(userId) {
@@ -90,9 +90,12 @@ var getDataBirthdate = function() {
             console.log("exist getDataBirthDate");
             docs = this.getElementsInfo('span._c24._50f3 div:nth-child(2)');
             birthdate = docs[0].text;
+            utils.dump(currentUser);
             currentUser.birthdate = birthdate;
         } else {
             console.log("not exist getDataBirthDate");
+             utils.dump(currentUser);
+
             currentUser.birthdate = "";
         }
 
@@ -116,7 +119,7 @@ var getDataArea = function() {
                 }
             }
         } else {
-            
+
         }
 
 
@@ -215,17 +218,23 @@ var users = JSON.parse(dataJsonUser);
 users.forEach(function(user) {
     console.log("raw data");
     utils.dump(user);
-    currentUser = user;
     //// 0. resolve id 
     casper.thenOpen("https://www.facebook.com/" + user.id, function() {
-        newId = this.getCurrentUrl().split("=")[1];
-        user.id = newId;
+        if (this.getCurrentUrl().split("=").length >= 2) {
+            newId = this.getCurrentUrl().split("=")[1];
+            if (newId) {
+                user.id = newId;
+            }
+        }
+        currentUser = user;
+
         ///////////1. Get Friend IDS 
         // openFriendPage(user.id);
         // scrollBottom(1);
         // capture("friend.png");
         // getDataFriendID();
         ////////// 2. Get Birthdate 
+        utils.dump(users);
         openAboutPage(user.id);
         scrollBottom(1);
         // capture("birthday.png");

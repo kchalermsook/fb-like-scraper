@@ -32,7 +32,7 @@ var getCommentsOfPost = function(postId) {
     });
 };
 
-getWhoLikePost("1229825353714210", 1);
+getWhoLikePost("1229825353714210", 5);
 // getCommentsOfPost("1229825353714210");
 
 // var fields = ['car', 'price', 'color'];
