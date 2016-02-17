@@ -2,7 +2,7 @@ var FB = require('fb');
 var json2csv = require('json2csv');
 var fs = require('fs');
 var USER_JSON_FILENAME = "user_json.txt";
-FB.setAccessToken('CAACEdEose0cBAB9JExnzlj9fptCdVZAkbUdL9lUtVnZCWFXvIm2YAFS7ZCj6LiAiZAt49ANV5ZByAgxX0BVpMP6J9oCFy4wid5BtDFkKFZBgYTBkifyyIuXRLc8ji6XyaNPZARoxSn9lKbipnr1GKXOkpUKD9S0Wo88qHh0OB9evdYPP6wmKr5YYsZCIZCTjc9JrchHfTB3nT7QZDZD');
+FB.setAccessToken('CAACEdEose0cBAPo6bXkENfyQWtSC9Wr1AFtYHZBYm5anagZAFZArWjWXN24QVbqZCvCKpwG5vLFON6pRou2bcruZAl9BiitPewaAuZBKTLqnru1eIa59JFITkwOubxa1EOWtgzorYyO1x8Qmu6lWKnMdQxj3c1simz0jPZCXj9x0Jt8zfXZBZBskRyxT8PZB2afiLcYZCdyu3DJZCgZDZD');
 
 
 var getWhoLikePost = function(postId, limit) {

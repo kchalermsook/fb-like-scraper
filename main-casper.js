@@ -2,6 +2,7 @@ var cookieFilename = "cookie";
 var fs = require('fs');
 var utils = require('utils');
 var moment = require('moment');
+
 var USER_JSON_FILENAME = "user_json.txt";
 
 var topics;
@@ -64,6 +65,7 @@ var waitSec = function(numSec) {
 /// Data 
 var getDataFriendID = function() {
     casper.then(function() {
+        console.log("getDataFriendID");
         docs = this.getElementsInfo('div[data-bt]:not([data-bt=""])');
         var all = [];
         for (var i = 0; i < docs.length; i++) {
@@ -94,14 +96,10 @@ var getDataBirthdate = function() {
             currentUser.birthdate = birthdate;
         } else {
             console.log("not exist getDataBirthDate");
-             utils.dump(currentUser);
+            utils.dump(currentUser);
 
             currentUser.birthdate = "";
         }
-
-
-
-
     });
 };
 var getDataArea = function() {
@@ -129,11 +127,16 @@ var getDataArea = function() {
 var getDataWork = function() {
     console.log("getDataWork");
     casper.then(function() {
-        docs = this.getElementsInfo('div._4qm1[data-pnref=work] div._42ef > div._6a');
-        var workText = docs.map(function(elem) {
-            return elem.text;
-        }).join("|");
-        console.log("workText : " + workText);
+        currentUser.works = "";
+        if (this.exists('div._4qm1[data-pnref=work] div._42ef > div._6a')) {
+            docs = this.getElementsInfo('div._4qm1[data-pnref=work] div._42ef > div._6a');
+            var workText = docs.map(function(elem) {
+                return elem.text;
+            }).join("|");
+            console.log("workText : " + workText);
+            currentUser.works = workText;
+        }
+
     });
 };
 
@@ -141,38 +144,46 @@ var getDataEducation = function() {
     console.log("getDataEducation");
     casper.then(function() {
         docs = this.getElementsInfo('div._4qm1[data-pnref=edu] div._42ef > div._6a');
-        var workText = docs.map(function(elem) {
+        var eduText = docs.map(function(elem) {
             return elem.text;
         }).join("|");
-        console.log("education : " + workText);
+        console.log("education : " + eduText);
+        currentUser.educations = eduText;
     });
 };
 
 var getDataLifeEvent = function() {
     console.log("getDataLifeEvent");
     casper.then(function() {
-        docs = this.getElementsInfo('li._2pi4');
-        utils.dump(docs);
-        var lifeEventText = docs.map(function(elem) {
-            return elem.text;
-        }).join("|");
-        console.log("lifeEvent : " + lifeEventText);
+        currentUser.lifeEvents = "";
+        if (this.exists('li._2pi4')) {
+            docs = this.getElementsInfo('li._2pi4');
+            var lifeEventText = docs.map(function(elem) {
+                return elem.text;
+            }).join("|");
+            console.log("lifeEvent : " + lifeEventText);
+            currentUser.lifeEvents = lifeEventText;
+        }
     });
 };
 
 var getLikeAndTopic = function() {
     console.log("getLikeAndTopic");
     casper.then(function() {
-        docs = this.getElementsInfo('div._3dc.lfloat._ohe._5brz > a:not(._3s-)');
-        topics = [];
-        for (var i = 0; i < docs.length; i++) {
-            var topicLink = docs[i].attributes.href;
-            var topicName = docs[i].attributes.name;
-            topics.push({
-                name: topicName,
-                link: topicLink
-            });
+        currentUser.likes = "";
+        if (this.exists('div._3dc.lfloat._ohe._5brz > a:not(._3s-)')) {
+            docs = this.getElementsInfo('div._3dc.lfloat._ohe._5brz > a:not(._3s-)');
+            topics = [];
+            for (var i = 0; i < docs.length; i++) {
+                var topicLink = docs[i].attributes.href;
+                var topicName = docs[i].attributes.name;
+                topics.push({
+                    name: topicName,
+                    link: topicLink
+                });
+            }
         }
+
         // utils.dump(topics);
         // var lifeEventText = docs.map(function(elem) {
         //     return elem.text;
@@ -183,11 +194,15 @@ var getLikeAndTopic = function() {
 
 var addPageLikeDataToTopicArr = function() {
     casper.then(function() {
-        docs = this.getElementsInfo('div.fsl.fwb.fcb > a');
-        var pagesLike = docs.map(function(elem) {
-            return elem.text;
-        }).join("|");
-        currentTopic.pages = pagesLike;
+        if (this.exists('div.fsl.fwb.fcb > a')) {
+            docs = this.getElementsInfo('div.fsl.fwb.fcb > a');
+            var pagesLike = docs.map(function(elem) {
+                return elem.text;
+            }).join("|");
+            currentTopic.pages = pagesLike;
+            utils.dump(currentTopic);
+            currentUser.likes = currentUser.likes + currentTopic.name + "-" + pagesLike + "|";
+        }
     });
 };
 
@@ -214,44 +229,114 @@ casper.then(function() {
 
 var dataJsonUser = fs.read(USER_JSON_FILENAME);
 var users = JSON.parse(dataJsonUser);
-// utils.dump(users);
+
 users.forEach(function(user) {
-    console.log("raw data");
     utils.dump(user);
     //// 0. resolve id 
-    casper.thenOpen("https://www.facebook.com/" + user.id, function() {
-        if (this.getCurrentUrl().split("=").length >= 2) {
-            newId = this.getCurrentUrl().split("=")[1];
+    casper.thenOpen("https://www.facebook.com/" + user.id, function() {});
+    casper.then(function() {
+        url = this.getCurrentUrl();
+        if (url.indexOf("profile.php") >= 0) {
+            if (url.split("=").length >= 2) {
+                newId = url.split("=")[1];
+                if (newId) {
+                    user.id = newId;
+                }
+            }
+        } else {
+            arrSplit = this.getCurrentUrl().split("/");
+            newId = arrSplit[arrSplit.length - 1];
             if (newId) {
-                user.id = newId;
+                casper.thenOpen("http://findmyfbid.com", function() {
+                    console.log("findmyfbid website opened" + newId);
+                });
+                //Now we have to populate username and password, and submit the form
+                casper.thenEvaluate(function(myId) {
+                    document.getElementsByName("url")[0].value = myId;
+                    document.getElementsByClassName("btn btn-primary")[0].click();
+                    //  document.querySelector('form').submit();
+                }, {
+                    myId: newId,
+                });
+
+                casper.then(function() {
+                    findMeArrSplit = this.getCurrentUrl().split("/");
+                    user.id = findMeArrSplit[findMeArrSplit.length - 1];
+                    ///// Last Step. Log the result 
+                });
             }
         }
-        currentUser = user;
+    });
 
+});
+casper.then(function() {
+    console.log("log before end ");
+    utils.dump(users);
+    users.forEach(function(user) {
         ///////////1. Get Friend IDS 
-        // openFriendPage(user.id);
-        // scrollBottom(1);
-        // capture("friend.png");
-        // getDataFriendID();
+        casper.then(function() {
+            currentUser = user;
+        });
+        openFriendPage(user.id);
+        scrollBottom(1);
+        capture("friend.png");
+        getDataFriendID();
         ////////// 2. Get Birthdate 
         utils.dump(users);
         openAboutPage(user.id);
         scrollBottom(1);
+        capture("about.png");
         // capture("birthday.png");
         getDataBirthdate();
         //////////// 3. Get Area 
         capture("area.png");
         getDataArea();
+        //////////// 4. Get Work 
+        openWorkPage(user.id);
+        scrollBottom(1);
+        capture("work.png");
+        getDataWork();
+        //////////// 5. Get Education 
+        getDataEducation();
+        //////////// 6. Get Life Event
+        openLifeEventPage(user.id);
+        scrollBottom(1);
+        capture("lifeEvent.png");
+        getDataLifeEvent();
+        /////////// 7. Get Like And Topic
+        openLikePage(user.id);
+        scrollBottom(1);
+        waitSec(5);
+        capture("likes.png");
+        getLikeAndTopic();
+        casper.then(function() {
+            utils.dump(topics);
+            topics.forEach(function(topic) {
+                casper.thenOpen(topic.link, function() {
+                    currentTopic = topic;
+                    console.log("open link " + topic.link);
+                    waitSec(2);
+                    addPageLikeDataToTopicArr();
+                });
+            });
+        });
     });
-
 });
 
-///// Last Step. Log the result 
 casper.then(function() {
-    console.log("log before end ");
+    console.log("log before endall ");
     utils.dump(users);
+    console.log("before stringify");
+    var content = JSON.stringify(users);
+    console.log("after stringify");
+    fs.write("result-json", content, 644);
+    console.log("after write file");
 });
 casper.run();
+
+
+
+
 
 
 // https://www.facebook.com/search/30/20/users-age-2/616836771737354/likers/intersect     // People who like Yamaha Tricity Thailand and are older than 20 and younger than 30
